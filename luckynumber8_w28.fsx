@@ -23,18 +23,18 @@ let threes =
                 | _ -> failwith "Array.windowed")
     |> Array.sum
 
-let rec gen acc ls =
-    match acc with
-    | [a;b;c] -> printfn "gen= %A" (List.rev acc)
-    | _ -> 
-           let ff = [0..((List.length ls) - 1 - (2 - List.length acc))]
-           printfn "%A" ff
-           ff
-           |> List.iter (fun i -> gen (ls.[i]::acc) (List.skip (i+1) ls))
+let genComb ls comLen = 
+    let rec gen acc ls comLen =
+        if List.length acc = comLen then printfn "gen= %A" (List.rev acc)
+        else 
+            [0..((List.length ls) - 1 - ((comLen - 1) - List.length acc))]               
+            |> List.iter (fun i -> gen (ls.[i]::acc) (List.skip (i+1) ls) comLen) 
+    gen [] ls comLen
     
     //ls |> List.iteri (fun i l -> gen (l::acc) (ls.[i+1, ))
 
-printfn "%i" ((ones + twos + threes) % (1000000007))
+
+//printfn "%i" ((ones + twos + threes) % (1000000007))
 //printfn "%A" (ones)
 //printfn "%A" (twos)
 //printfn "%A" (threes)
