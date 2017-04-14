@@ -6,33 +6,45 @@ let arrays =
                             let _ = Console.ReadLine()
                             Console.ReadLine().Split(' ') |> Array.map Int32.Parse |> List.ofArray) 
 
-let rec shorten (xs: int list) =
-    //printfn "%A" xs
-    let except (xs: int list list) (ix:int) = 
-        xs.[0..(ix-1)] @ xs.[(ix+1).. ((List.length xs) - 1)]
-    let reclaim (ws: int list list) (xs: int list) = 
-        if (List.length ws = 0) then 
-            []
-        else
-            let middles = ws |> List.map (fun e-> e.[1]) 
-            let l = List.last xs
-            let f = xs.[0]
-            let r = f :: (middles @ [l])                    
-            //printfn "reclaim=%A" r
-            r
+let IX_NOT_SET = -1
+let rec cntRems (xs: int list) acc fragmentIx ix = 
+    match xs with
+    | [a; b; c] -> if fragmentIx = IX_NOT_SET then                     
+                       acc 
+                   else 
+                       if c = 0 then acc + (ix - fragmentIx + 1) // 100, 010, 000
+                       else if b = 0 then acc + (ix - fragmentIx) // 001, 101
+                       else acc + (ix - fragmentIx - 1) // 011
+    | a :: b :: c :: tail -> if fragmentIx = IX_NOT_SET then
+                                if a = 0 then
+                                    // start of fragment to eat, just set fragmentIx to current ix
+                                    cntRems (b::c::tail) acc ix (ix+1)
+                                else 
+                                    // not in fragment and not starting one, going through badlands, keep going...
+                                    cntRems (b::c::tail) acc IX_NOT_SET (ix+1)                                                             
+                             elif b <> 0 && c <> 0 then
+                                // end of fragment, increase the removed elements acc accordingly
+                                cntRems (b::c::tail) (acc + (ix - fragmentIx + 1) - 2) IX_NOT_SET (ix+1)
+                             else 
+                                // continue going through fragment
+                                cntRems (b::c::tail) acc fragmentIx (ix+1)
+    | _ -> failwith "cntRems list shorter than 3 elements"
 
-    let ws = List.windowed 3 xs
-    
-    let toRemoveIxOpt = ws |> List.tryFindIndex (fun w -> w.[0] = 0 && w.[2] = 0)
-    match toRemoveIxOpt with
-        | Some ix -> 
-                let exc = except ws ix
-                //printfn "except=%A" exc
-                shorten (reclaim exc xs)
-        | None -> xs
-        
+let rec shorten2 (xs: int list) = 
+    match xs with
+    | a :: b :: c :: tail -> if a = 0 && c = 0 then shorten2 (a :: c :: tail) else a :: shorten2 (b :: c :: tail)
+    | _ -> xs
+
 
 arrays
 |> List.iter (fun xs -> 
-                let diff = (List.length xs) - List.length (shorten xs)
-                if diff % 2 = 0 then printfn "%s" "Bob" else printfn "%s" "Alice")
+                match xs with
+                | [] ->  printfn "%s" "Bob"
+                | [_] -> printfn "%s" "Bob"
+                | [_; _] -> printfn "%s" "Bob"
+                | [a; b; c] -> if a = 0 && c = 0 then printfn "%s" "Alice" else printfn "%s" "Bob"
+                | _ ->
+                    let cnt = cntRems xs 0 IX_NOT_SET 0
+                    printfn "%A" cnt
+                    if cnt % 2 = 0 then printfn "%s" "Bob" else printfn "%s" "Alice")
+
